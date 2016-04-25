@@ -43,24 +43,31 @@ The URL in apt sources can have any of the formats [documented](http://docs.aws.
 
 ```
 # virtual-hosted style (any region)
-deb http://my-bucket.s3.amazonaws.com jessie main contrib
+deb s3://my-bucket.s3.amazonaws.com jessie main contrib
 
 # path style
-deb http://s3.amazonaws.com/my-bucket jessie main contrib
+deb s3://s3.amazonaws.com/my-bucket jessie main contrib
 
 # path style for region other than us-east-1
-deb http://s3-sa-east-1.amazonaws.com/my-bucket jessie main contrib
+deb s3://s3-sa-east-1.amazonaws.com/my-bucket jessie main contrib
 ```
 
 Any endpoint can be used that has an S3-compatible API.
 
 ```
-deb http://swift.example.com/my-bucket jessie main contrib
+deb s3://swift.example.com/my-bucket jessie main contrib
 ```
 
 ### Credentials
 
-Credentials are resolved in the usual manner.
+Credentials may be specified in in the [user information](https://tools.ietf.org/html/rfc3986#section-3.2.1) of the URL. The key and secret should be [URL-encoded](https://tools.ietf.org/html/rfc3986#section-2.1).
+
+```
+deb s3://AWS_ACCESS_KEY:AWS_SECRET_KEY@my-bucket.s3.amazonaws.com jessie main contrib
+deb s3://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI%2FK7MDENG%2FbPxRfiCYEXAMPLEKEY@my-bucket.s3.amazonaws.com jessie main contrib
+```
+
+However, you are recommended to use one of the standard AWS crendential mechanisms instead. apt-boto-s3 will resolve these if the crendetials are not specified in the URL.
 
 1. Environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 1. Credentials file: `~/.aws/credentials`

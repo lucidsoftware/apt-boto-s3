@@ -7,6 +7,7 @@ import shutil
 import signal
 import sys
 import threading
+import urllib
 import urlparse
 
 class MessageHeader(collections.namedtuple('MessageHeader_', ['status_code', 'status_info'])):
@@ -102,7 +103,7 @@ class S3AptMethod(AptMethod):
             except ValueError:
                 authority = uri_parts.netloc
             else:
-                user_parts = uri_parts.netloc[:at_index].split(':', 1)
+                user_parts = map(urllib.unquote, uri_parts.netloc[:at_index].split(':', 1))
                 try:
                     s3_config['aws_access_key_id'], s3_config['aws_secret_access_key'] = user_parts
                 except ValueError:
