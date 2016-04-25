@@ -53,10 +53,11 @@ class AptMethod(collections.namedtuple('AptMethod_', ['pipes'])):
 
             # TODO: Use a proper executor. concurrent.futures has them, but it's only in Python 3.2+.
             threads = []
-            error_info = None
+            interrupt = False
+            interrupt_lock = threading.Lock()
 
             lines = []
-            while error_info is None:
+            while not interrupt:
                 line = sys.stdin.readline()
                 if not line:
                     for thread in threads:
@@ -71,16 +72,14 @@ class AptMethod(collections.namedtuple('AptMethod_', ['pipes'])):
                     def handle_message():
                         try:
                             self.handle_message(message)
-                        except:
-                            error_info = sys.exc_info()
+                        except Exception as ex:
+                            with interrupt_lock.lock():
+                                if not interrupt:
+                                    interrupt = True
+                                    self.send(Message(MessageHeaders.GENERAL_FAILURE, {'Message': ex}))
                     thread = threading.Thread(target=handle_message)
                     threads.append(thread)
                     thread.start()
-                else:
-                    pass
-
-            if error_info is not None:
-                raise error_info[1], None, error_info[2]
         except Exception as ex:
             self.send(Message(MessageHeaders.GENERAL_FAILURE, {'Message': ex}))
             raise
@@ -110,12 +109,9 @@ class S3AptMethod(AptMethod):
                     raise Exception('Access key and secret are specified improperly in the URL')
                 authority = uri_parts.authority[at_index + 1:]
             s3_config['endpoint_url'] = 'https://{}/'.format(authority)
-            try:
-                s3 = boto3.resource('s3', **s3_config)
-            except:
+            s3 = boto3.resource('s3', **s3_config)
 
-
-            virtual_host_match = re.match('(.*).s3(?:-[^.]*)?.amazonaws.com', uri_parts.host)
+            virtual_host_match = re.match('(.*).s3(?:-[^.]*)?.amazonaws.com', uri_parts.hostname)
             if virtual_host_match:
                 bucket = virtual_host_match.group(1)
                 key = uri_parts.path[1:]
