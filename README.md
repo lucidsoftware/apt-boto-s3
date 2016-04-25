@@ -31,7 +31,7 @@ pip install apt-boto-s3
 Then add the `s3` transport method
 
 ```
-curl -o /usr/lib/apt/methods/s3 https://raw.githubusercontent.com/castlabs//master/s3.py
+curl -o /usr/lib/apt/methods/s3 https://raw.githubusercontent.com/lucidsoftware/apt-boto-s3/master/s3.py
 chmod 755 /usr/lib/apt/methods/s3
 ```
 
@@ -60,15 +60,17 @@ deb s3://swift.example.com/my-bucket jessie main contrib
 
 ### Credentials
 
-Credentials may be specified in in the [user information](https://tools.ietf.org/html/rfc3986#section-3.2.1) of the URL. The key and secret should be [URL-encoded](https://tools.ietf.org/html/rfc3986#section-2.1).
+apt-boto-s3 resolves AWS credentials in the usual manner.
+
+1. Environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+1. Credentials file: `~/.aws/credentials`
+1. Instance metadata: http://169.254.169.254
+
+Credentials may be also be specified in in the [user information](https://tools.ietf.org/html/rfc3986#section-3.2.1) of the URL. The key and secret should be [URL-encoded](https://tools.ietf.org/html/rfc3986#section-2.1).
 
 ```
 deb s3://AWS_ACCESS_KEY:AWS_SECRET_KEY@my-bucket.s3.amazonaws.com jessie main contrib
 deb s3://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI%2FK7MDENG%2FbPxRfiCYEXAMPLEKEY@my-bucket.s3.amazonaws.com jessie main contrib
 ```
 
-However, you are recommended to use one of the standard AWS crendential mechanisms instead. apt-boto-s3 will resolve these if the crendetials are not specified in the URL.
-
-1. Environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-1. Credentials file: `~/.aws/credentials`
-1. Instance metadata: http://169.254.169.254
+Inline URL credentials take precendent when present.
