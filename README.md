@@ -6,8 +6,6 @@ Access S3-hosted apt repositories via the AWS APIs.
 
 ## Why apt-boto-s3?
 
-The most widely deployed package management system meets one of the largest cloud storage providers. Perfect.
-
 While there are alternative apt transports for S3, like [apt-transport-s3](https://github.com/BashtonLtd/apt-transport-s3) or [apt-s3/apt-transport-s3](https://github.com/castlabs/apt-s3), this project has
 
 * standard AWS credential resolution, including environment variables and ~/.aws/credentials
@@ -25,7 +23,7 @@ Python 2.7 and the AWS Python SDK (boto) are required.
 
 ```
 apt-get install python python-pip
-pip install apt-boto-s3
+pip install boto3
 ```
 
 Then add the `s3` transport method
