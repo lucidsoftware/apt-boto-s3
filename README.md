@@ -1,6 +1,6 @@
 # apt-boto-s3
 
-The **fast** and **simple** S3 transport for apt.
+The *fast* and *simple* S3 transport for apt.
 
 Access S3-hosted apt repositories via the AWS APIs.
 
@@ -8,7 +8,7 @@ Access S3-hosted apt repositories via the AWS APIs.
 
 The most widely deployed package management system meets one of the largest cloud storage providers. Perfect.
 
-There are alternative apt transports for S3, like [apt-transport-s3](https://github.com/BashtonLtd/apt-transport-s3) or [apt-s3/apt-transport-s3](https://github.com/castlabs/apt-s3). This project has
+While there are alternative apt transports for S3, like [apt-transport-s3](https://github.com/BashtonLtd/apt-transport-s3) or [apt-s3/apt-transport-s3](https://github.com/castlabs/apt-s3), this project has
 
 * standard AWS credential resolution, including environment variables and ~/.aws/credentials
 * pipelining requests for faster updates
@@ -44,8 +44,10 @@ The URL in apt sources can have any of the formats [documented](http://docs.aws.
 ```
 # virtual-hosted style (any region)
 deb http://my-bucket.s3.amazonaws.com jessie main contrib
+
 # path style
 deb http://s3.amazonaws.com/my-bucket jessie main contrib
+
 # path style for region other than us-east-1
 deb http://s3-sa-east-1.amazonaws.com/my-bucket jessie main contrib
 ```
@@ -60,6 +62,6 @@ deb http://swift.example.com/my-bucket jessie main contrib
 
 Credentials are resolved in the usual manner.
 
-# Environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-# Credentials1 file: `~/.aws/credentials`
-# Instance metadata: http://169.254.169.254
+1. Environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+1. Credentials file: `~/.aws/credentials`
+1. Instance metadata: http://169.254.169.254
