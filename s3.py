@@ -2,8 +2,8 @@
 import boto3
 import botocore
 import collections
+import hashlib
 import re
-import shutil
 import signal
 import sys
 import threading
@@ -150,11 +150,29 @@ class S3AptMethod(AptMethod):
                     'Size': s3_response['ContentLength'],
                     'URI': uri,
                 }))
+
+                md5 = hashlib.md5()
+                sha1 = hashlib.sha1()
+                sha256 = hashlib.sha256()
+                sha512 = hashlib.sha512()
                 with open(message.fields['Filename'], 'wb') as f:
-                    shutil.copyfileobj(s3_response['Body'], f)
+                    while True:
+                        bytes = s3_response['Body'].read(16 * 1024)
+                        if not bytes:
+                            break
+                        f.write(bytes)
+                        md5.update(bytes)
+                        sha1.update(bytes)
+                        sha256.update(bytes)
+                        sha512.update(bytes)
                 self.send(Message(MessageHeaders.URI_DONE, {
                     'Filename': message.fields['Filename'],
                     'Last-Modified': s3_response['LastModified'].isoformat(),
+                    'MD5-Hash': md5.hexdigest(),
+                    'MD5Sum-Hash': md5.hexdigest(),
+                    'SHA1-Hash': sha1.hexdigest(),
+                    'SHA256-Hash': sha256.hexdigest(),
+                    'SHA512-Hash': sha512.hexdigest(),
                     'Size': s3_response['ContentLength'],
                     'URI': uri,
                 }))

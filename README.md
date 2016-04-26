@@ -13,6 +13,7 @@ While there are alternative apt transports for S3, like [apt-transport-s3](https
 * Last-Modified caching
 * broad AWS API support, e.g. v4 credentials
 * operability with any S3-compatible API
+* works with all standard digest algorithms
 * Apache 2.0 license
 
 ## Installing
