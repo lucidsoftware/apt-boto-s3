@@ -53,11 +53,10 @@ class AptMethod(collections.namedtuple('AptMethod_', ['pipes'])):
 
             # TODO: Use a proper executor. concurrent.futures has them, but it's only in Python 3.2+.
             threads = []
-            interrupt = False
-            interrupt_lock = threading.Lock()
+            interrupt = {'lock': threading.Lock(), 'value': False}
 
             lines = []
-            while not interrupt:
+            while not interrupt['value']:
                 line = sys.stdin.readline()
                 if not line:
                     for thread in threads:
@@ -73,10 +72,11 @@ class AptMethod(collections.namedtuple('AptMethod_', ['pipes'])):
                         try:
                             self.handle_message(message)
                         except Exception as ex:
-                            with interrupt_lock.lock():
-                                if not interrupt:
-                                    interrupt = True
+                            with interrupt['lock']:
+                                if not interrupt['value']:
+                                    interrupt['value'] = True
                                     self.send(Message(MessageHeaders.GENERAL_FAILURE, {'Message': ex}))
+                            raise
                     thread = threading.Thread(target=handle_message)
                     threads.append(thread)
                     thread.start()
