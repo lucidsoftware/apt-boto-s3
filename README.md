@@ -43,14 +43,14 @@ or clone this repo and run `./install`.
 The URL in apt sources can have any of the formats [documented](http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro) by AWS.
 
 ```
-# virtual-hosted style (any region)
-deb s3://my-bucket.s3.amazonaws.com jessie main contrib
-
 # path style
 deb s3://s3.amazonaws.com/my-bucket jessie main contrib
 
 # path style for region other than us-east-1
 deb s3://s3-sa-east-1.amazonaws.com/my-bucket jessie main contrib
+
+# virtual-hosted style
+deb s3://my-bucket.s3.amazonaws.com jessie main contrib
 ```
 
 Any endpoint can be used that has an S3-compatible API.
@@ -75,3 +75,15 @@ deb s3://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI%2FK7MDENG%2FbPxRfiCYEXAMPLEKEY@my-bu
 ```
 
 Inline URL credentials take precendent when present.
+
+#### Signature version
+
+Some regions, e.g. eu-central-1, support only AWS version 4 signatures. However, this version does not work with virtual-hosted style URLs. And many S3 clones support only version 2.
+
+apt-boto-s3 uses version 4 for s3*.amazonaws.com path style URLs; otherwise it uses version 2.
+
+This should just work, but if you need to override this default, set `S3::Signature::Version` in apt configuration, e.g. in `/etc/apt/apt.conf.d/s3`:
+
+```
+S3::Signature::Version "2";
+```
