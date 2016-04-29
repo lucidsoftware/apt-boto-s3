@@ -1,0 +1,5 @@
+#!/bin/sh
+apt-get install python python-pip
+pip install boto3
+cp s3.py /usr/lib/apt/methods/s3
+chmod 755 /usr/lib/apt/methods/s3

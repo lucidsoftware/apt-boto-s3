@@ -34,6 +34,8 @@ curl -o /usr/lib/apt/methods/s3 https://raw.githubusercontent.com/lucidsoftware/
 chmod 755 /usr/lib/apt/methods/s3
 ```
 
+or clone this repo and run `./install`.
+
 ## Usage
 
 ### URLs
