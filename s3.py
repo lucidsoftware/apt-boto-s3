@@ -105,7 +105,7 @@ class S3AptMethod(AptMethod):
 
         def user_host(self):
             parts = self.uri.netloc.split('@', 1)
-            return parts if len(parts) == 2 else None, parts[0]
+            return parts if len(parts) == 2 else (None, parts[0])
 
         def endpoint_url(self):
             return 'https://{}/'.format(self.user_host()[1])
