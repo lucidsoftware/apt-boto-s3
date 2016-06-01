@@ -1,8 +1,6 @@
 # apt-boto-s3
 
-The *fast* and *simple* S3 transport for apt.
-
-Access S3-hosted apt repositories via the AWS APIs.
+The *fast* and *simple* S3 transport for apt. Access S3-hosted apt repositories via the AWS APIs.
 
 ## Why apt-boto-s3?
 
@@ -22,7 +20,7 @@ Install from the APT repository:
 
 ```
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 379CE192D401AB61
-echo 'deb http://dl.bintray.com/lucidsoftware/apt/ lucid main' > /etc/apt/sources.list.d/lucid-bintray.lis
+echo 'deb http://dl.bintray.com/lucidsoftware/apt/ lucid main' > /etc/apt/sources.list.d/lucidsoftware-bintray.list
 
 apt-get update
 apt-get install apt-boto-s3
@@ -66,15 +64,17 @@ deb s3://AWS_ACCESS_KEY:AWS_SECRET_KEY@my-bucket.s3.amazonaws.com jessie main co
 deb s3://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI%2FK7MDENG%2FbPxRfiCYEXAMPLEKEY@my-bucket.s3.amazonaws.com jessie main contrib
 ```
 
-Inline URL credentials take precendent when present.
+URL credentials take precendent when present.
 
 #### Signature version
 
-Some regions, e.g. eu-central-1, support only AWS version 4 signatures. However, this version does not work with virtual-hosted style URLs. And many S3 clones support only version 2.
+Hopefully, this should "just work" and you can ignore this.
 
-apt-boto-s3 uses version 4 for s3*.amazonaws.com path style URLs; otherwise it uses version 2.
+Some regions, e.g. eu-central-1, support only AWS version 4 signatures. However, version 4 does not work with virtual-hosted style URLs, and many S3 clones support only version 2.
 
-This should just work, but if you need to override this default, set `S3::Signature::Version` in apt configuration, e.g. in `/etc/apt/apt.conf.d/s3`:
+apt-boto-s3 uses version 4 for path style URLs with a s3*.amazonaws.com host; otherwise it uses version 2.
+
+If you need to override this default, set `S3::Signature::Version` in apt configuration, e.g. in `/etc/apt/apt.conf.d/s3`:
 
 ```
 S3::Signature::Version "2";
@@ -82,16 +82,16 @@ S3::Signature::Version "2";
 
 ## Build
 
+[![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)
+
 Create the deb package
 
 ```sh
 make
 ```
 
-Then install that package
+Then install it
 
 ```sh
 make install
 ```
-
-[![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)
