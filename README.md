@@ -16,25 +16,17 @@ While there are alternative apt transports for S3, like [apt-transport-s3](https
 * works with all standard digest algorithms
 * Apache 2.0 license
 
-## Installing
+## Install
 
-There's not a debian package (yet) for apt-boto-s3, but installation is straightforward.
-
-Python 2.7 and the AWS Python SDK (boto) are required.
+Install from the APT repository:
 
 ```
-apt-get install python python-pip
-pip install boto3
-```
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 379CE192D401AB61
+echo 'deb http://dl.bintray.com/lucidsoftware/apt/ lucid main' > /etc/apt/sources.list.d/lucid-bintray.lis
 
-Then add the `s3` transport method
-
+apt-get update
+apt-get install apt-boto-s3
 ```
-curl -o /usr/lib/apt/methods/s3 https://raw.githubusercontent.com/lucidsoftware/apt-boto-s3/master/s3.py
-chmod 755 /usr/lib/apt/methods/s3
-```
-
-or clone this repo and run `./install`.
 
 ## Usage
 
@@ -89,5 +81,17 @@ S3::Signature::Version "2";
 ```
 
 ## Build
+
+Create the deb package
+
+```sh
+make
+```
+
+Then install that package
+
+```sh
+make install
+```
 
 [![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)

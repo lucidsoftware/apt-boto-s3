@@ -7,6 +7,10 @@ MAKEFLAGS += -r -j $(JOBS)
 .PHONY: dist
 dist: target/apt_boto_s3.deb
 
+.PHONY: install
+install: target/apt_boto_s3.deb
+	dpkg -i $<
+
 .PHONY: clean
 clean:
 	rm -fr target
