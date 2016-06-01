@@ -87,3 +87,7 @@ This should just work, but if you need to override this default, set `S3::Signat
 ```
 S3::Signature::Version "2";
 ```
+
+## Build
+
+[![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)

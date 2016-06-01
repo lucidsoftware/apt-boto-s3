@@ -1,0 +1,17 @@
+deploy:
+  -
+    file: bintray.json
+    key: $BINTRAY_KEY
+    on:
+      tags: true
+    provider: bintray
+    skip_cleanup: true
+    user: pauldraper
+  -
+    api_key: $GITHUB_AUTH
+    file: target/apt_boto_s3.deb
+    on:
+      tags: true
+    provider: releases
+    skip_cleanup: true
+script: make dist

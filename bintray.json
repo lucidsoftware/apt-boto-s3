@@ -1,0 +1,24 @@
+{
+    "files": [
+        {
+            "includePattern": "target/(apt_boto_s3)(\\.deb)",
+            "matrixParams": {
+                "deb_architecture": "amd64,i386",
+                "deb_component": "main",
+                "deb_distribution": "lucid"
+            },
+            "uploadPattern": "pool/main/a/apt-boto-s3/$1_0.1$2"
+        }
+    ],
+    "package": {
+        "name": "apt-boto-s3",
+        "repo": "apt",
+        "subject": "lucidsoftware"
+    },
+    "publish": true,
+    "version": {
+        "name": "0.1",
+        "gpgSign": true,
+        "vcs_tag": "v0.1"
+    }
+}
