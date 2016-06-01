@@ -84,14 +84,9 @@ S3::Signature::Version "2";
 
 [![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)
 
-Create the deb package
+To build and install from source,
 
 ```sh
 make
-```
-
-Then install it
-
-```sh
-make install
+make install # as root
 ```
