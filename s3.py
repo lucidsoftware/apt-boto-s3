@@ -168,6 +168,8 @@ class S3AptRequest(AptRequest):
         def __init__(self, request, raw_uri):
             self.request = request
             self.uri = urlparse.urlparse(raw_uri)
+            match = re.match('(.+\.|)?s3(?:-([^.]*))?.amazonaws.com', self.uri.hostname)
+            self.virtual_host_bucket, self.region = (match.groups() if match else (None, None))
 
         def user_host(self):
             parts = self.uri.netloc.split('@', 1)
@@ -186,13 +188,8 @@ class S3AptRequest(AptRequest):
                     raise Exception('Access key and secret are specified improperly in the URL')
             return None, None
 
-        def virtual_host_bucket(self):
-            virtual_host_match = re.match('(?:(.*).|)s3(?:-[^.]*)?.amazonaws.com', self.uri.hostname)
-            return virtual_host_match and virtual_host_match.group(1)
-
         def bucket_key(self):
-            bucket = self.virtual_host_bucket()
-            if bucket:
+            if self.virtual_host_bucket:
                 key = self.uri.path[1:]
             else:
                 _, bucket, key = map(urllib.unquote, self.uri.path.split('/', 2))
@@ -201,7 +198,7 @@ class S3AptRequest(AptRequest):
         def signature_version(self):
             if self.request.signature_version:
                 return self.request.signature_version
-            elif self.virtual_host_bucket() == '':
+            elif self.virtual_host_bucket == '':
                 return 's3v4'
 
     def _handle_message(self, message):
@@ -222,6 +219,7 @@ class S3AptRequest(AptRequest):
             session = boto3.session.Session(
                 aws_access_key_id=s3_access_key,
                 aws_secret_access_key=s3_access_secret,
+                region_name=s3_uri.region,
             )
             s3 = session.resource('s3',
                 config=botocore.client.Config(signature_version=s3_uri.signature_version()),
