@@ -7,7 +7,7 @@
                 "deb_component": "main",
                 "deb_distribution": "lucid"
             },
-            "uploadPattern": "pool/main/a/apt-boto-s3/$1_1.0$2"
+            "uploadPattern": "pool/main/a/apt-boto-s3/$1_1.1$2"
         }
     ],
     "package": {
@@ -17,8 +17,8 @@
     },
     "publish": true,
     "version": {
-        "name": "1.0",
+        "name": "1.1",
         "gpgSign": true,
-        "vcs_tag": "v1.0"
+        "vcs_tag": "v1.1"
     }
 }
