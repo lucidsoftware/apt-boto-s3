@@ -77,7 +77,9 @@ class AptRequest(collections.namedtuple('AptRequest_', ['output'])):
         try:
             self._handle_message(message)
         except Exception as ex:
-            self.output.send(Message(MessageHeaders.GENERAL_FAILURE, (('Message', ex),)))
+            exc_tb = sys.exc_info()[2]
+            message = '{} ({}, line {})'.format(ex, exc_tb.tb_frame.f_code.co_filename, exc_tb.tb_lineno)
+            self.output.send(Message(MessageHeaders.GENERAL_FAILURE, (('Message', message),)))
 
 class PipelinedAptMethod(AptMethod):
 
