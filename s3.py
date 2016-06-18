@@ -215,18 +215,28 @@ class S3AptRequest(AptRequest):
             filename = message.get_field('Filename')
             s3_uri = self.S3Uri(self, uri)
 
-            s3_access_key, s3_access_secret = s3_uri.credentials()
+            access_key, access_secret = s3_uri.credentials()
+            bucket, key = s3_uri.bucket_key()
+
+            region = s3_uri.region
+            if not region and s3_uri.virtual_host_bucket:
+                # find bucket's region
+                session = boto3.session.Session(
+                    aws_access_key_id=access_key,
+                    aws_secret_access_key=access_secret,
+                    region_name='us-east-1',
+                )
+                s3_client = session.client('s3')
+                region = s3_client.get_bucket_location(Bucket=bucket)['LocationConstraint'] or 'us-east-1'
             session = boto3.session.Session(
-                aws_access_key_id=s3_access_key,
-                aws_secret_access_key=s3_access_secret,
-                region_name=s3_uri.region,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=access_secret,
+                region_name=region or 'us-east-1',
             )
             s3 = session.resource('s3',
                 config=botocore.client.Config(signature_version=s3_uri.signature_version()),
                 endpoint_url=s3_uri.endpoint_url(),
             )
-
-            bucket, key = s3_uri.bucket_key()
             s3_object = s3.Bucket(bucket).Object(key)
 
             self.output.send(Message(MessageHeaders.STATUS, (
