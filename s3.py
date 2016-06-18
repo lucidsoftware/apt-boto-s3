@@ -11,6 +11,21 @@ import threading
 import urllib
 import urlparse
 
+class Interrupt():
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.interrupted = False
+
+    def __nonzero__(self):
+        return self.interrupted
+
+    def interupt(self):
+        with self.lock:
+            if not self.interrupted:
+                self.interrupted = True
+                return True
+        return False
+
 class MessageHeader(collections.namedtuple('MessageHeader_', ['status_code', 'status_info'])):
     def __str__(self):
         return '{} {}'.format(self.status_code, self.status_info)
@@ -49,28 +64,33 @@ class Message(collections.namedtuple('Message_', ['header', 'fields'])):
 
 Pipes = collections.namedtuple('Pipes', ['input', 'output'])
 
-class AptOutput(collections.namedtuple('AptMethod_', ['output'])):
-    def send(self, message):
-        self.output.write(str(message))
-        self.output.flush()
+class AptIO(object):
+    @staticmethod
+    def input(input):
+        def read_one():
+            lines = []
+            while True:
+                line = input.readline()
+                if not line:
+                    return None
+                line = line.rstrip('\n')
+                if line:
+                    lines.append(line)
+                elif lines:
+                    return Message.parse_lines(lines)
+        return iter(read_one, None)
 
-class AptInput(collections.namedtuple('AptInput_', ['input'])):
-    def receive(self):
-        lines = []
-        while True:
-            line = self.input.readline()
-            if not line:
-                return None
-            line = line.rstrip('\n')
-            if line:
-                lines.append(line)
-            elif lines:
-                return Message.parse_lines(lines)
+    @staticmethod
+    def output(output):
+        def send_one(message):
+            output.write(str(message))
+            output.flush()
+        return send_one
 
 class AptMethod(object):
     def __init__(self, pipes):
-        self.input = AptInput(pipes.input)
-        self.output = AptOutput(pipes.output)
+        self.input = AptIO.input(pipes.input)
+        self.output = AptIO.output(pipes.output)
 
 class AptRequest(collections.namedtuple('AptRequest_', ['output'])):
     def handle_message(self, message):
@@ -79,7 +99,7 @@ class AptRequest(collections.namedtuple('AptRequest_', ['output'])):
         except Exception as ex:
             exc_tb = sys.exc_info()[2]
             message = '{} ({}, line {})'.format(ex, exc_tb.tb_frame.f_code.co_filename, exc_tb.tb_lineno)
-            self.output.send(Message(MessageHeaders.GENERAL_FAILURE, (('Message', message),)))
+            self.output(Message(MessageHeaders.GENERAL_FAILURE, (('Message', message),)))
 
 class PipelinedAptMethod(AptMethod):
 
@@ -90,60 +110,50 @@ class PipelinedAptMethod(AptMethod):
             self.method.queues.put(self.queue)
 
         def __enter__(self):
-            pass
+            return self.queue.put
 
         def __exit__(self, type, value, traceback):
             self.queue.put(None)
 
         def send(self, message):
-            if message.header == MessageHeaders.GENERAL_FAILURE:
-                with self.method.interrupt['lock']:
-                    if not self.method.interrupt['value']:
-                        self.method.interrupt['value'] = True
-                        self.queue.put(message)
-            else:
+            if message.header != MessageHeaders.GENERAL_FAILURE:
+                self.queue.put(message)
+            elif self.method.interrupt:
                 self.queue.put(message)
 
     def __init__(self, method_type, pipes):
         super(PipelinedAptMethod, self).__init__(pipes)
-        self.interrupt = {'lock': threading.Lock(), 'value': False}
+        self.interrupt = Interrupt()
         self.method_type = method_type
         self.queues = Queue.Queue()
 
     def _send_queue_thread(self):
         def f():
-            while True:
-                queue = self.queues.get(True)
-                if queue is None:
-                    break
-                while True:
-                    message = queue.get(True)
-                    if message is None:
-                        break
-                    self.output.send(message)
+            # try:
+                for queue in iter(self.queues.get, None):
+                    for message in iter(queue.get, None):
+                        self.output(message)
+            # except IOError:
+            #     pass
         thread = threading.Thread(target=f)
         thread.start()
         return thread
 
     def _handle_message_thread(self, message):
-        output = self.Output(self)
+        pipelined_output = self.Output(self)
         def f():
-            with output:
+            with pipelined_output as output:
                 self.method_type.request(output).handle_message(message)
         thread = threading.Thread(target=f)
         thread.start()
         return thread
 
     def run(self):
-        self.output.send(Message(MessageHeaders.CAPABILITIES, self.method_type.capabilities()))
-
+        self.output(Message(MessageHeaders.CAPABILITIES, self.method_type.capabilities()))
         # TODO: Use a proper executor. concurrent.futures has them, but only in Python 3.2+.
-        threads = []
-        threads.append(self._send_queue_thread())
-
-        while not self.interrupt['value']:
-            message = self.input.receive()
-            if message is None:
+        threads = [self._send_queue_thread()]
+        for message in self.input:
+            if self.interrupt:
                 break
             threads.append(self._handle_message_thread(message))
         self.queues.put(None)
@@ -241,7 +251,7 @@ class S3AptRequest(AptRequest):
             )
             s3_object = s3.Bucket(bucket).Object(key)
 
-            self.output.send(Message(MessageHeaders.STATUS, (
+            self.output(Message(MessageHeaders.STATUS, (
                 ('Message', 'Requesting {}/{}'.format(bucket, key)),
                 ('URI', uri),
             )))
@@ -253,18 +263,18 @@ class S3AptRequest(AptRequest):
                 s3_response = s3_object.get(**s3_request)
             except botocore.exceptions.ClientError as error:
                 if error.response['Error']['Code'] == '304':
-                    self.output.send(Message(MessageHeaders.URI_DONE, (
+                    self.output(Message(MessageHeaders.URI_DONE, (
                         ('Filename', filename),
                         ('IMS-Hit', 'true'),
                         ('URI', uri),
                     )))
                 else:
-                    self.output.send(Message(MessageHeaders.URI_FAILURE, (
+                    self.output(Message(MessageHeaders.URI_FAILURE, (
                         ('Message', error.response['Error']['Message']),
                         ('URI', uri),
                     )))
             else:
-                self.output.send(Message(MessageHeaders.URI_START, (
+                self.output(Message(MessageHeaders.URI_START, (
                     ('Last-Modified', s3_response['LastModified'].isoformat()),
                     ('Size', s3_response['ContentLength']),
                     ('URI', uri),
@@ -284,7 +294,7 @@ class S3AptRequest(AptRequest):
                         sha1.update(bytes)
                         sha256.update(bytes)
                         sha512.update(bytes)
-                self.output.send(Message(MessageHeaders.URI_DONE, (
+                self.output(Message(MessageHeaders.URI_DONE, (
                     ('Filename', filename),
                     ('Last-Modified', s3_response['LastModified'].isoformat()),
                     ('MD5-Hash', md5.hexdigest()),
@@ -297,6 +307,7 @@ class S3AptRequest(AptRequest):
                 )))
 
 if __name__ == '__main__':
+    # interrupt signals are sometimes sent
     def signal_handler(signal, frame):
         pass
     signal.signal(signal.SIGINT, signal_handler)
