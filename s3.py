@@ -180,7 +180,8 @@ class S3AptRequest(AptRequest):
         def __init__(self, request, raw_uri):
             self.request = request
             self.uri = urlparse.urlparse(raw_uri)
-            match = re.match('(.+\.|)?s3(?:-([^.]*))?.amazonaws.com', self.uri.hostname)
+            # parse host as if it were an AWS host
+            match = re.match('(.+\.|)?s3(?:[-.]([^.]*))?.amazonaws.com', self.uri.hostname)
             self.virtual_host_bucket, self.region = (match.groups() if match else (None, None))
 
         def user_host(self):
