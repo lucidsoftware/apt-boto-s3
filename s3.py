@@ -3,6 +3,7 @@ import boto3
 import botocore
 import collections
 import hashlib
+import os
 import Queue
 import re
 import signal
@@ -201,18 +202,18 @@ class S3AptRequest(AptRequest):
                 else:
                     raise Exception('Access key and secret are specified improperly in the URL')
 
-            if self.role_arn is not None:
+            role_arn = os.environ.get("role_arn", None)
+            if role_arn:
                 creds_rsp = boto3.client('sts').assume_role(
-                    RoleArn=self.role_arn,
+                    RoleArn=role_arn,
                     RoleSessionName=socket.gethostname().replace('.', '-'),
                 )
-                if "Credentials" not in creds_rsp:
-                    return None, None
+                if "Credentials" in creds_rsp:
+                    return creds_rsp["Credentials"]["AccessKeyId"],
+                creds_rsp["Credentials"]["SecretAccessKey"],
+                creds_rsp["Credentials"]["SessionToken"]
 
-                return creds_rsp["Credentials"]["AccessKeyId"],
-                creds_rsp["Credentials"]["SecretAccessKey"]
-
-            return None, None
+            return None, None, None
 
         def bucket_key(self):
             if self.virtual_host_bucket:
@@ -237,13 +238,13 @@ class S3AptRequest(AptRequest):
                     except KeyError:
                         raise Exception('Invalid value for S3::Signature::Version')
                 if key == 'S3::Credentials::RoleArn':
-                    self.role_arn = value
+                    os.environ["role_arn"] = value
         elif message.header.status_code == MessageHeaders.URI_ACQUIRE.status_code:
             uri = message.get_field('URI')
             filename = message.get_field('Filename')
             s3_uri = self.S3Uri(self, uri)
 
-            access_key, access_secret = s3_uri.credentials()
+            access_key, access_secret, token = s3_uri.credentials()
             bucket, key = s3_uri.bucket_key()
 
             region = s3_uri.region
@@ -252,6 +253,7 @@ class S3AptRequest(AptRequest):
                 session = boto3.session.Session(
                     aws_access_key_id=access_key,
                     aws_secret_access_key=access_secret,
+                    aws_session_token=token,
                     region_name='us-east-1',
                 )
                 s3_client = session.client('s3')
@@ -259,6 +261,7 @@ class S3AptRequest(AptRequest):
             session = boto3.session.Session(
                 aws_access_key_id=access_key,
                 aws_secret_access_key=access_secret,
+                aws_session_token=token,
                 region_name=region or 'us-east-1',
             )
             s3 = session.resource('s3',
