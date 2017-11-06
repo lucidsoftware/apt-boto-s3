@@ -6,6 +6,7 @@ import hashlib
 import Queue
 import re
 import signal
+import socket
 import sys
 import threading
 import urllib
@@ -199,6 +200,18 @@ class S3AptRequest(AptRequest):
                     return map(urllib.unquote, user_parts)
                 else:
                     raise Exception('Access key and secret are specified improperly in the URL')
+
+            if self.role_arn is not None:
+                creds_rsp = boto3.client('sts').assume_role(
+                    RoleArn=self.role_arn,
+                    RoleSessionName=socket.gethostname().replace('.', '-'),
+                )
+                if "Credentials" not in creds_rsp:
+                    return None, None
+
+                return creds_rsp["Credentials"]["AccessKeyId"],
+                creds_rsp["Credentials"]["SecretAccessKey"]
+
             return None, None
 
         def bucket_key(self):
@@ -223,6 +236,8 @@ class S3AptRequest(AptRequest):
                         self.signature_version = {'2':'s3', '4':'s3v4'}[value]
                     except KeyError:
                         raise Exception('Invalid value for S3::Signature::Version')
+                if key == 'S3::Credentials::RoleArn':
+                    self.role_arn = value
         elif message.header.status_code == MessageHeaders.URI_ACQUIRE.status_code:
             uri = message.get_field('URI')
             filename = message.get_field('Filename')
