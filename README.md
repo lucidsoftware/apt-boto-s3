@@ -80,6 +80,17 @@ If you need to override this default, set `S3::Signature::Version` in apt config
 S3::Signature::Version "2";
 ```
 
+### Instance metadata service
+
+You can also tweak the timeout and retry settings for requests to retrieve credentials from the instance metadata.
+
+```
+S3::MetadataService::Retries "5";
+S3::MetadataService::Timeout "2";
+```
+
+The default values are 5 retries with a 1 second timeout.
+
 ## Build
 
 [![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)
