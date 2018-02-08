@@ -10,6 +10,8 @@ import sys
 import threading
 import urllib
 import urlparse
+import os
+from botocore.config import Config
 
 class Interrupt():
     def __init__(self):
@@ -246,8 +248,9 @@ class S3AptRequest(AptRequest):
                 aws_secret_access_key=access_secret,
                 region_name=region or 'us-east-1',
             )
+            config_lrn = Config(signature_version=s3_uri.signature_version(), proxies=ProxyForS3.proxies)
             s3 = session.resource('s3',
-                config=botocore.client.Config(signature_version=s3_uri.signature_version()),
+                config=config_lrn,
                 endpoint_url=s3_uri.endpoint_url(),
             )
             s3_object = s3.Bucket(bucket).Object(key)
@@ -307,7 +310,24 @@ class S3AptRequest(AptRequest):
                     ('URI', uri),
                 )))
 
+
+class ProxyForS3():
+    proxies = {}
+
 if __name__ == '__main__':
+    if os.path.isfile('/etc/apt/apt.conf'):
+        with open('/etc/apt/apt.conf') as file:
+            for line in file.readlines():
+                if line.find('Acquire::http::Proxy'):
+                    (key, value) = line.split(' ')
+                    ProxyForS3.proxies['http'] = re.sub('[;"]', '', value).rstrip()
+                if line.find('Acquire::https::Proxy'):
+                    (key, value) = line.split(' ')
+                    ProxyForS3.proxies['https'] = re.sub('[;"]', '', value).rstrip()
+                if line.find('Acquire::ftp::Proxy'):
+                    (key, value) = line.split(' ')
+                    ProxyForS3.proxies['ftp'] = re.sub('[;"]', '', value).rstrip()
+
     # interrupt signals are sometimes sent
     def signal_handler(signal, frame):
         pass
