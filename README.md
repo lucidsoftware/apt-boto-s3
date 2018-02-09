@@ -1,6 +1,7 @@
 # apt-boto-s3
 
 The *fast* and *simple* S3 transport for apt. Access S3-hosted apt repositories via the AWS APIs.
+In this fork was added support for proxy servers.
 
 ## Why apt-boto-s3?
 
@@ -66,6 +67,16 @@ deb s3://AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI%2FK7MDENG%2FbPxRfiCYEXAMPLEKEY@my-bu
 
 URL credentials take precendent when present.
 
+## Proxy
+If access to S3 requires a proxy, the proxy can be set in `/etc/apt/apt.conf`.
+
+Example:
+```sh
+Acquire::http::Proxy "http://proxy-01.server:PORT";
+Acquire::https::Proxy "http://proxy-02.server:PORT";
+Acquire::ftp::Proxy "http://proxy-03.server:PORT";
+```
+
 #### Signature version
 
 Hopefully, this should "just work" and you can ignore this.
@@ -81,9 +92,6 @@ S3::Signature::Version "2";
 ```
 
 ## Build
-
-[![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)
-
 To build and install from source,
 
 ```sh
