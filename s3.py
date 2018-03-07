@@ -3,9 +3,11 @@ import boto3
 import botocore
 import collections
 import hashlib
+import os
 import Queue
 import re
 import signal
+import socket
 import sys
 import threading
 import urllib
@@ -218,7 +220,19 @@ class S3AptRequest(AptRequest):
                     return map(urllib.unquote, user_parts)
                 else:
                     raise Exception('Access key and secret are specified improperly in the URL')
-            return None, None
+
+            role_arn = os.environ.get("role_arn", None)
+            if role_arn:
+                creds_rsp = boto3.client('sts').assume_role(
+                    RoleArn=role_arn,
+                    RoleSessionName=socket.gethostname().replace('.', '-'),
+                )
+                if "Credentials" in creds_rsp:
+                    return creds_rsp["Credentials"]["AccessKeyId"],
+                creds_rsp["Credentials"]["SecretAccessKey"],
+                creds_rsp["Credentials"]["SessionToken"]
+
+            return None, None, None
 
         def bucket_key(self):
             if self.virtual_host_bucket:
@@ -244,6 +258,8 @@ class S3AptRequest(AptRequest):
                         settings.signature_version = {'2':'s3', '4':'s3v4'}[value]
                     except KeyError:
                         raise Exception('Invalid value for S3::Signature::Version')
+                elif key == 'S3::Credentials::RoleArn':
+                    os.environ["role_arn"] = value
                 elif key == 'S3::MetadataService::Retries':
                     try:
                         metadata_service_num_attempts = int(value) + 1
@@ -265,7 +281,7 @@ class S3AptRequest(AptRequest):
             filename = message.get_field('Filename')
             s3_uri = self.S3Uri(self, uri)
 
-            access_key, access_secret = s3_uri.credentials()
+            access_key, access_secret, token = s3_uri.credentials()
             bucket, key = s3_uri.bucket_key()
 
             region = s3_uri.region
@@ -275,6 +291,7 @@ class S3AptRequest(AptRequest):
                 session = boto3.session.Session(
                     aws_access_key_id=access_key,
                     aws_secret_access_key=access_secret,
+                    aws_session_token=token,
                     region_name='us-east-1',
                     botocore_session=botocore_session,
                 )
@@ -283,6 +300,7 @@ class S3AptRequest(AptRequest):
             session = boto3.session.Session(
                 aws_access_key_id=access_key,
                 aws_secret_access_key=access_secret,
+                aws_session_token=token,
                 region_name=region or 'us-east-1',
                 botocore_session=botocore_session,
             )
