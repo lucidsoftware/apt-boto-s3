@@ -5,4 +5,4 @@ Maintainer: Lucid Software <ops@lucidsoftware.com>
 Package: apt-boto-s3
 Priority: optional
 Section: base
-Version: 1.3
+Version: 1.5
