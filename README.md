@@ -1,5 +1,8 @@
 # apt-boto-s3
 
+[![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)
+[![Package](https://img.shields.io/bintray/v/lucidsoftware/apt/apt-boto-s3.svg)](https://bintray.com/lucidsoftware/apt/apt-boto-s3/_latestVersion)
+
 The *fast* and *simple* S3 transport for apt. Access S3-hosted apt repositories via the AWS APIs.
 In this fork was added support for proxy servers.
 
@@ -21,7 +24,7 @@ Install from the APT repository:
 
 ```
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 379CE192D401AB61
-echo 'deb http://dl.bintray.com/lucidsoftware/apt/ lucid main' > /etc/apt/sources.list.d/lucidsoftware-bintray.list
+echo deb http://dl.bintray.com/lucidsoftware/apt/ lucid main > /etc/apt/sources.list.d/lucidsoftware-bintray.list
 
 apt-get update
 apt-get install apt-boto-s3
@@ -91,7 +94,19 @@ If you need to override this default, set `S3::Signature::Version` in apt config
 S3::Signature::Version "2";
 ```
 
+### Instance metadata service
+
+You can also tweak the timeout and retry settings for requests to retrieve credentials from the instance metadata.
+
+```
+S3::MetadataService::Retries "5";
+S3::MetadataService::Timeout "2";
+```
+
+The default values are 5 retries with a 1 second timeout.
+
 ## Build
+
 To build and install from source,
 
 ```sh

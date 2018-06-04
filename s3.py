@@ -3,15 +3,37 @@ import boto3
 import botocore
 import collections
 import hashlib
+import os
 import Queue
 import re
 import signal
+import socket
 import sys
 import threading
 import urllib
 import urlparse
 import os
 from botocore.config import Config
+
+class Settings(object):
+    def __init__(self):
+        self.metadata_service_num_attempts = 5
+        self.metadata_service_timeout = 1
+        self.signature_version = None
+    def botocore_session(self):
+        session = botocore.session.get_session()
+        if self.metadata_service_num_attempts is not None:
+            session.set_config_variable(
+                'metadata_service_num_attempts',
+                self.metadata_service_num_attempts,
+            )
+        if self.metadata_service_timeout is not None:
+            session.set_config_variable(
+                'metadata_service_timeout',
+                self.metadata_service_timeout,
+            )
+        return session
+settings = Settings()
 
 class Interrupt():
     def __init__(self):
@@ -176,7 +198,6 @@ class S3AptMethodType(object):
 class S3AptRequest(AptRequest):
     def __init__(self, output):
         super(S3AptRequest, self).__init__(output)
-        self.signature_version = None
 
     class S3Uri:
         def __init__(self, request, raw_uri):
@@ -201,7 +222,19 @@ class S3AptRequest(AptRequest):
                     return map(urllib.unquote, user_parts)
                 else:
                     raise Exception('Access key and secret are specified improperly in the URL')
-            return None, None
+
+            role_arn = os.environ.get("role_arn", None)
+            if role_arn:
+                creds_rsp = boto3.client('sts').assume_role(
+                    RoleArn=role_arn,
+                    RoleSessionName=socket.gethostname().replace('.', '-'),
+                )
+                if "Credentials" in creds_rsp:
+                    return creds_rsp["Credentials"]["AccessKeyId"],
+                creds_rsp["Credentials"]["SecretAccessKey"],
+                creds_rsp["Credentials"]["SessionToken"]
+
+            return None, None, None
 
         def bucket_key(self):
             if self.virtual_host_bucket:
@@ -211,42 +244,67 @@ class S3AptRequest(AptRequest):
             return bucket, key
 
         def signature_version(self):
-            if self.request.signature_version:
-                return self.request.signature_version
+            global settings
+            if settings.signature_version:
+                return settings.signature_version
             elif self.virtual_host_bucket == '':
                 return 's3v4'
 
     def _handle_message(self, message):
+        global settings
         if message.header.status_code == MessageHeaders.CONFIGURATION.status_code:
             for config in message.get_fields('Config-Item'):
                 key, value = config.split('=', 1)
                 if key == 'S3::Signature::Version':
                     try:
-                        self.signature_version = {'2':'s3', '4':'s3v4'}[value]
+                        settings.signature_version = {'2':'s3', '4':'s3v4'}[value]
                     except KeyError:
                         raise Exception('Invalid value for S3::Signature::Version')
+                elif key == 'S3::Credentials::RoleArn':
+                    os.environ["role_arn"] = value
+                elif key == 'S3::MetadataService::Retries':
+                    try:
+                        metadata_service_num_attempts = int(value) + 1
+                        if metadata_service_num_attempts < 1:
+                            metadata_service_num_attempts = 1
+                        settings.metadata_service_num_attempts = metadata_service_num_attempts
+                    except ValueError:
+                        raise Exception('Invalid value for S3::MetadataService::Retries')
+                elif key == 'S3::MetadataService::Retries':
+                    try:
+                        metadata_service_timeout = int(value)
+                        if metadata_service_timeout < 1:
+                            metadata_service_timeout = None
+                        settings.metadata_service_timeout = metadata_service_timeout
+                    except ValueError:
+                        raise Exception('Invalid value for S3::MetadataService::Timeout')
         elif message.header.status_code == MessageHeaders.URI_ACQUIRE.status_code:
             uri = message.get_field('URI')
             filename = message.get_field('Filename')
             s3_uri = self.S3Uri(self, uri)
 
-            access_key, access_secret = s3_uri.credentials()
+            access_key, access_secret, token = s3_uri.credentials()
             bucket, key = s3_uri.bucket_key()
 
             region = s3_uri.region
+            botocore_session = settings.botocore_session()
             if not region and s3_uri.virtual_host_bucket:
                 # find bucket's region
                 session = boto3.session.Session(
                     aws_access_key_id=access_key,
                     aws_secret_access_key=access_secret,
+                    aws_session_token=token,
                     region_name='us-east-1',
+                    botocore_session=botocore_session,
                 )
                 s3_client = session.client('s3')
                 region = s3_client.get_bucket_location(Bucket=bucket)['LocationConstraint'] or 'us-east-1'
             session = boto3.session.Session(
                 aws_access_key_id=access_key,
                 aws_secret_access_key=access_secret,
+                aws_session_token=token,
                 region_name=region or 'us-east-1',
+                botocore_session=botocore_session,
             )
             if len(ProxyForS3.proxies)>0:
                 config_lrn = Config(signature_version=s3_uri.signature_version(), proxies=ProxyForS3.proxies)
