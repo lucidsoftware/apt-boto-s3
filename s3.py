@@ -117,7 +117,10 @@ class AptMethod(object):
         self.input = AptIO.input(pipes.input)
         self.output = AptIO.output(pipes.output)
 
-class AptRequest(collections.namedtuple('AptRequest_', ['output'])):
+class AptRequest(object):
+    def __init__(self, output):
+        self.output = output
+
     def handle_message(self, message):
         try:
             self._handle_message(message)
