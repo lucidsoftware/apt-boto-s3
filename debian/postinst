@@ -1,2 +1,2 @@
 #!/bin/sh
-pip install boto3
+pip3 install boto3

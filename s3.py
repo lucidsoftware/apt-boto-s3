@@ -1,23 +1,26 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import boto3
 import botocore
 import collections
 import hashlib
 import os
-import Queue
+from queue import Queue
 import re
 import signal
 import socket
 import sys
 import threading
-import urllib
-import urlparse
+import urllib.request
+import urllib.error
+import urllib.parse
+
 
 class Settings(object):
     def __init__(self):
         self.metadata_service_num_attempts = 5
         self.metadata_service_timeout = 1
         self.signature_version = None
+
     def botocore_session(self):
         session = botocore.session.get_session()
         if self.metadata_service_num_attempts is not None:
@@ -38,7 +41,7 @@ class Interrupt():
         self.lock = threading.Lock()
         self.interrupted = False
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.interrupted
 
     def interupt(self):
@@ -128,7 +131,7 @@ class PipelinedAptMethod(AptMethod):
     class Output(object):
         def __init__(self, method):
             self.method = method
-            self.queue = Queue.Queue()
+            self.queue = Queue()
             self.method.queues.put(self.queue)
 
         def __enter__(self):
@@ -147,7 +150,7 @@ class PipelinedAptMethod(AptMethod):
         super(PipelinedAptMethod, self).__init__(pipes)
         self.interrupt = Interrupt()
         self.method_type = method_type
-        self.queues = Queue.Queue()
+        self.queues = Queue()
 
     def _send_queue_thread(self):
         def f():
@@ -200,7 +203,7 @@ class S3AptRequest(AptRequest):
     class S3Uri:
         def __init__(self, request, raw_uri):
             self.request = request
-            self.uri = urlparse.urlparse(raw_uri)
+            self.uri = urllib.parse.urlparse(raw_uri)
             # parse host as if it were an AWS host
             match = re.match('(.+\.|)?s3(?:[-.]([^.]*))?.amazonaws.com', self.uri.hostname)
             self.virtual_host_bucket, self.region = (match.groups() if match else (None, None))
@@ -217,7 +220,7 @@ class S3AptRequest(AptRequest):
             if user:
                 user_parts = user.split(':', 1)
                 if len(user_parts) == 2:
-                    return map(urllib.unquote, user_parts)
+                    return list(map(urllib.parse.unquote, user_parts))
                 else:
                     raise Exception('Access key and secret are specified improperly in the URL')
 
@@ -238,7 +241,7 @@ class S3AptRequest(AptRequest):
             if self.virtual_host_bucket:
                 key = self.uri.path[1:]
             else:
-                _, bucket, key = map(urllib.unquote, self.uri.path.split('/', 2))
+                _, bucket, key = list(map(urllib.parse.unquote, self.uri.path.split('/', 2)))
             return bucket, key
 
         def signature_version(self):
