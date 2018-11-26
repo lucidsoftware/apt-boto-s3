@@ -228,9 +228,9 @@ class S3AptRequest(AptRequest):
                     RoleSessionName=socket.gethostname().replace('.', '-'),
                 )
                 if "Credentials" in creds_rsp:
-                    return creds_rsp["Credentials"]["AccessKeyId"],
-                creds_rsp["Credentials"]["SecretAccessKey"],
-                creds_rsp["Credentials"]["SessionToken"]
+                    return (creds_rsp["Credentials"]["AccessKeyId"],
+                            creds_rsp["Credentials"]["SecretAccessKey"],
+                            creds_rsp["Credentials"]["SessionToken"])
 
             return None, None, None
 
