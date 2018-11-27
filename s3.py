@@ -18,6 +18,7 @@ class Settings(object):
         self.metadata_service_num_attempts = 5
         self.metadata_service_timeout = 1
         self.signature_version = None
+        self.sts_client = boto3.client('sts')
     def botocore_session(self):
         session = botocore.session.get_session()
         if self.metadata_service_num_attempts is not None:
@@ -31,6 +32,7 @@ class Settings(object):
                 self.metadata_service_timeout,
             )
         return session
+
 settings = Settings()
 
 class Interrupt():
@@ -213,6 +215,7 @@ class S3AptRequest(AptRequest):
             return 'https://{}/'.format(self.user_host()[1])
 
         def credentials(self):
+            global settings
             user, _ = self.user_host()
             if user:
                 user_parts = user.split(':', 1)
@@ -223,7 +226,7 @@ class S3AptRequest(AptRequest):
 
             role_arn = os.environ.get("role_arn", None)
             if role_arn:
-                creds_rsp = boto3.client('sts').assume_role(
+                creds_rsp = settings.sts_client.assume_role(
                     RoleArn=role_arn,
                     RoleSessionName=socket.gethostname().replace('.', '-'),
                 )
