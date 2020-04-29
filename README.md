@@ -1,6 +1,6 @@
 # apt-boto-s3
 
-[![Build Status](https://travis-ci.org/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.org/lucidsoftware/apt-boto-s3)
+[![Build Status](https://travis-ci.com/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.com/lucidsoftware/apt-boto-s3)
 [![Package](https://img.shields.io/bintray/v/lucidsoftware/apt/apt-boto-s3.svg)](https://bintray.com/lucidsoftware/apt/apt-boto-s3/_latestVersion)
 
 The *fast* and *simple* S3 transport for apt. Access S3-hosted apt repositories via the AWS APIs.
