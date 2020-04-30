@@ -1,5 +1,5 @@
 Architecture: all
-Depends: python-pip
+Depends: python3-pip
 Description: The fast and simple S3 transport for apt
 Maintainer: Lucid Software <ops@lucidsoftware.com>
 Package: apt-boto-s3
