@@ -59,6 +59,7 @@ apt-boto-s3 resolves AWS credentials in the usual manner.
 1. Environment variables: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 1. Credentials file: `~/.aws/credentials`
 1. Instance metadata: http://169.254.169.254
+1. Assume Role `S3::Credentials::RoleArn "arn:aws:iam::012345678901:role/my-role";`
 
 Credentials may be also be specified in in the [user information](https://tools.ietf.org/html/rfc3986#section-3.2.1) of the URL. The key and secret should be [URL-encoded](https://tools.ietf.org/html/rfc3986#section-2.1).
 
