@@ -1,3 +1,7 @@
+# No longer maintained
+
+This project is no longer maintained. [apt-transport-s3](https://github.com/MayaraCloud/apt-transport-s3) solves the same problems, and is actually in the official Ubuntu repositories. In most cases it is probably a good replacement.
+
 # apt-boto-s3
 
 [![Build Status](https://travis-ci.com/lucidsoftware/apt-boto-s3.svg?branch=master)](https://travis-ci.com/lucidsoftware/apt-boto-s3)
